@@ -15,7 +15,27 @@ print(ENCODE_LEN)
 
 # data for training
 class data:
-    def __init__(self) -> data:
+    def __init__(self, s: dict) -> data:
+        # current piece
+        self.piece_type = s["mv"]["kind"][0]
+        # locks
+        self.placement_kind = s["lock"]["placement_kind"]
+        self.b2b = s["lock"]["b2b"]
+        self.pc = s["lock"]["perfect_clear"]
+        self.combo = s["lock"]["combo"]
+        self.garbage_sent = s["lock"]["garbage_sent"]
+        self.cleared_lines = s["lock"]["cleared_lines"]
+
+        # board
+        self.board = s["board"]["cells"]  # must add current piece to it
+        self.column_heights = s["board"]["column_heights"]
+        self.bag = s["board"]["bag"]
+        self.hold = s["board"]["hold_piece"]
+        self.queue = s["board"]["next_pieces"]
+
+        # eval (the target)
+        self.eval = s["evaluation"]  # (value, spike)
+
         pass
 
     # should return a sparse tensor for performance
