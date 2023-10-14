@@ -38,9 +38,51 @@ class data:
 
         pass
 
+    def to_idx(value):
+        return {"I": 0, "O": 1, "T": 2, "L": 3, "J": 4, "S": 5, "Z": 6}[value]
+
+    def convolute(self, m, n, offset=0):
+        ret = [[(row >> j) & 1 for j in range(10)] for row in self.board]
+        for row in ret:
+            for i in range(11 - m):
+                for j in range(1, m + 1):
+                    row[i] += row[i + j] << j
+
+        for j in range(10):
+            for i in range(41 - n):
+                for k in range(1, n + 1):
+                    ret[i][j] += ret[i + k][j] << (m * k)
+        indices = []
+        for i in range(41 - n):
+            for j in range(11 - m):
+                indices.append((1 << (n * m)) * (i * (11 - m) + j) + ret[i][j] + offset)
+        return indices
+
     # should return a sparse tensor for performance
     def encode(self) -> torch.Tensor:
-        pass
+        offset = 0
+        indices = data.convolute(self.board, 3, 4, offset)
+        offset += (1 << (3 * 4)) * (11 - 3) * (41 - 4)
+        indices += data.convolute(self.board, 10, 1, offset)
+        offset += (1 << (10 * 1)) * (11 - 10) * (41 - 1)
+        for i in [0, 1, 2, 3, 4, 5, 6]:
+            if (self.bag >> i) & 1:
+                indices.insert(offset + i)
+        offset += 7
+        if self.b2b:
+            indices.insert(offset)
+        offset += 1
+        indices.insert(offset + min(self.combo, 19))
+        offset += 20
+        for i, v in enumerate(self.queue):
+            indices.insert(offset + 7 * i + data.to_idx(v))
+        offset += 35
+        # I know this is not a sufficient check, but I don't care
+        if self.hold in "IOTLJSZ":
+            indices.insert(offset + data.to_idx(self.hold))
+        offset += 7
+        values = [1] * len(indices)
+        return torch.sparse_coo_tensor([indices], values, offset)
 
 
 class nnue(nn.Module):
