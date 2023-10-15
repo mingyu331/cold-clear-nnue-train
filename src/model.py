@@ -14,8 +14,8 @@ print(ENCODE_LEN)
 
 
 # data for training
-class data:
-    def __init__(self, s: dict) -> data:
+class Data:
+    def __init__(self, s: dict):
         # current piece
         self.piece_type = s["mv"]["kind"][0]
         # locks
@@ -61,31 +61,32 @@ class data:
     # should return a sparse tensor for performance
     def encode(self) -> torch.Tensor:
         offset = 0
-        indices = data.convolute(self.board, 3, 4, offset)
+        indices = self.convolute(3, 4, offset)
         offset += (1 << (3 * 4)) * (11 - 3) * (41 - 4)
-        indices += data.convolute(self.board, 10, 1, offset)
+        indices += self.convolute(10, 1, offset)
         offset += (1 << (10 * 1)) * (11 - 10) * (41 - 1)
         for i in [0, 1, 2, 3, 4, 5, 6]:
             if (self.bag >> i) & 1:
-                indices.insert(offset + i)
+                indices.append(offset + i)
         offset += 7
         if self.b2b:
-            indices.insert(offset)
+            indices.append(offset)
         offset += 1
-        indices.insert(offset + min(self.combo, 19))
+        indices.append(offset + min(self.combo, 19))
         offset += 20
         for i, v in enumerate(self.queue):
-            indices.insert(offset + 7 * i + data.to_idx(v))
+            indices.append(offset + 7 * i + Data.to_idx(v))
         offset += 35
         # I know this is not a sufficient check, but I don't care
         if self.hold in "IOTLJSZ":
-            indices.insert(offset + data.to_idx(self.hold))
+            indices.append(offset + Data.to_idx(self.hold))
         offset += 7
         values = [1] * len(indices)
+        print(offset)
         return torch.sparse_coo_tensor([indices], values, offset)
 
 
-class nnue(nn.Module):
+class NNUE(nn.Module):
     def __init__(self):
         super().__init__()
         self.encode = nn.Linear(ENCODE_LEN, 128)
@@ -93,7 +94,7 @@ class nnue(nn.Module):
         self.linear2 = nn.Linear(64, 32)
         self.linear3 = nn.Linear(32, 2)
 
-    def forward(self, d: data):
+    def forward(self, d: Data):
         encoded = d.encode()
         layer1 = self.encode(encoded)
         clamp1 = torch.clamp(layer1, 0, 1)
@@ -118,4 +119,4 @@ class nnue(nn.Module):
         return json.dumps(params_flattened)
 
     def serialize_json(self):
-        return f'{{"encode": {nnue.serialize_layer(self.encode)}, "layer1": {nnue.serialize_layer(self.linear1)}, "layer2": {nnue.serialize_layer(self.linear2)}, "layer3": {nnue.serialize_layer(self.linear3)}}}'
+        return f'{{"encode": {NNUE.serialize_layer(self.encode)}, "layer1": {NNUE.serialize_layer(self.linear1)}, "layer2": {NNUE.serialize_layer(self.linear2)}, "layer3": {NNUE.serialize_layer(self.linear3)}}}'
