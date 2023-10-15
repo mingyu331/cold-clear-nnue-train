@@ -45,12 +45,12 @@ class Data:
         ret = [[(row >> j) & 1 for j in range(10)] for row in self.board]
         for row in ret:
             for i in range(11 - m):
-                for j in range(1, m + 1):
+                for j in range(1, m):
                     row[i] += row[i + j] << j
 
         for j in range(10):
             for i in range(41 - n):
-                for k in range(1, n + 1):
+                for k in range(1, n):
                     ret[i][j] += ret[i + k][j] << (m * k)
         indices = []
         for i in range(41 - n):
@@ -72,7 +72,9 @@ class Data:
         if self.b2b:
             indices.append(offset)
         offset += 1
-        indices.append(offset + min(self.combo, 19))
+        indices.append(
+            offset + min(0 if type(self.combo) is not int else self.combo, 19)
+        )
         offset += 20
         for i, v in enumerate(self.queue):
             indices.append(offset + 7 * i + Data.to_idx(v))
@@ -83,7 +85,7 @@ class Data:
         offset += 7
         values = [1] * len(indices)
         print(offset)
-        return torch.sparse_coo_tensor([indices], values, offset)
+        return torch.sparse_coo_tensor(torch.tensor([indices]), torch.tensor(values))
 
 
 class NNUE(nn.Module):
