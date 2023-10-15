@@ -9,7 +9,7 @@ import numpy
 import json
 
 # ENCODE_LEN = ((8 * 37) << 12) + ((1 * 40) << 10)
-ENCODE_LEN = 1
+ENCODE_LEN = 1253446
 print(ENCODE_LEN)
 
 
@@ -34,7 +34,7 @@ class Data:
         self.queue = s["board"]["next_pieces"]
 
         # eval (the target)
-        self.eval = s["evaluation"]  # (value, spike)
+        self.eval = s["evaluation"][0]  # (value, spike)
 
         pass
 
@@ -94,7 +94,7 @@ class NNUE(nn.Module):
         self.encode = nn.Linear(ENCODE_LEN, 128)
         self.linear1 = nn.Linear(128, 64)
         self.linear2 = nn.Linear(64, 32)
-        self.linear3 = nn.Linear(32, 2)
+        self.linear3 = nn.Linear(32, 1)
 
     def forward(self, d: Data):
         encoded = d.encode()
@@ -110,8 +110,8 @@ class NNUE(nn.Module):
         layer4[1] = layer4[1].clamp(min=0)
         return layer4
 
-    def serialize_layer(l) -> str:
-        params = list(l.parameters())
+    def serialize_layer(self) -> str:
+        params = list(self.parameters())
         params_flattened = numpy.concatenate(
             [
                 torch.transpose(params[0], 0, 1).detach().numpy().flatten(),
