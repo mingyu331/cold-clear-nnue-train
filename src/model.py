@@ -34,7 +34,7 @@ class Data:
         self.queue = s["board"]["next_pieces"]
 
         # eval (the target)
-        self.eval = s["evaluation"]['value']  # (value, spike)
+        self.eval = s["evaluation"]["value"]  # (value, spike)
 
         pass
 
@@ -85,7 +85,9 @@ class Data:
         offset += 7
         values = [1] * len(indices)
         print(offset)
-        return torch.sparse_coo_tensor(torch.tensor([indices]), torch.tensor(values)).float()
+        return torch.sparse_coo_tensor(
+            torch.tensor([indices]), torch.tensor(values)
+        ).float()
 
 
 class NNUE(nn.Module):
@@ -106,7 +108,6 @@ class NNUE(nn.Module):
         clamp3 = torch.clamp(layer3, 0, 1)
         layer4 = self.linear3(clamp3)
         # scale to respective sizes
-        layer4[0] = 1000 * layer4[0].clamp(max=0)
         return layer4
 
     def serialize_layer(self) -> str:
