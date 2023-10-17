@@ -86,7 +86,7 @@ class Data:
         values = [1] * len(indices)
         print(offset)
         return torch.sparse_coo_tensor(
-            torch.tensor([indices]), torch.tensor(values)
+            torch.tensor([indices]), torch.tensor(values), (offset,)
         ).float()
 
 
